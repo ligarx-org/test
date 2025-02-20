@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rasm Matnini O‘qish</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.0.2/tesseract.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: linear-gradient(45deg, #ff9a9e, #fad0c4, #fad0c4);
+            animation: gradient 5s infinite alternate;
+            text-align: center;
+            color: #fff;
+        }
+        @keyframes gradient {
+            0% { background: linear-gradient(45deg, #ff9a9e, #fad0c4); }
+            100% { background: linear-gradient(45deg, #a18cd1, #fbc2eb); }
+        }
+      .logo {
+    font-size: 40px;
+    font-weight: 900;
+    background: linear-gradient(45deg, red, blue, green, purple);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-block;
+}
+        @keyframes logoColor {
+            0% { background: linear-gradient(45deg, red, blue); }
+            100% { background: linear-gradient(45deg, purple, orange); }
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 400px;
+        }
+        h2 {
+            margin-bottom: 15px;
+        }
+        input {
+            display: none;
+        }
+        label {
+            display: block;
+            padding: 10px 15px;
+            background: linear-gradient(45deg, #007bff, #0056b3);
+            color: #fff;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        label:hover {
+            background: linear-gradient(45deg, #0056b3, #007bff);
+        }
+        canvas {
+            width: 100%;
+            margin-top: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .output {
+            font-size: 20px;
+            font-weight: bold;
+            color: yellow;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <h4 class="logo">Davronov <span>Dilshodbek</span></h4> 
+
+    <div class="container">
+        <h2>Rasm yuklang va faqat sonlarni o‘qing</h2>
+        <input type="file" id="upload" accept="image/*">
+        <label for="upload">Rasmni tanlash</label>
+        <canvas id="canvas"></canvas>
+        <p class="output" id="output">Natija: </p>
+    </div>
+
+    <script>
+        let canvas = document.getElementById("canvas");
+        let ctx = canvas.getContext("2d");
+        let output = document.getElementById("output");
+
+        document.getElementById("upload").addEventListener("change", function (event) {
+            let file = event.target.files[0];
+            let reader = new FileReader();
+
+            reader.onload = function (e) {
+                let img = new Image();
+                img.src = e.target.result;
+
+                img.onload = function () {
+                    let scaleFactor = 0.5; // Rasmlar tezroq o‘qilishi uchun kichraytiramiz
+                    canvas.width = img.width * scaleFactor;
+                    canvas.height = img.height * scaleFactor;
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    canvas.style.display = "block"; 
+                    extractText();
+                };
+            };
+            reader.readAsDataURL(file);
+        });
+
+        function extractText() {
+            output.innerText = "Matn o‘qilmoqda...";
+            Tesseract.recognize(canvas, "eng", {
+                logger: (m) => console.log(m),
+                tessedit_char_whitelist: "0123456789" // Faqat sonlarni o‘qish uchun
+            }).then(({ data: { text } }) => {
+                let numbersOnly = text.replace(/\D+/g, " ").trim();
+                output.innerText = "Natija: " + (numbersOnly ? numbersOnly : "Hech qanday son topilmadi");
+            });
+        }
+    </script>
+
+</body>
+</html>

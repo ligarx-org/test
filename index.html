@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Particle Effects</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #121212;
+            color: white;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        #particle-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        
+        #content {
+            position: relative;
+            z-index: 1;
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .control-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .control-group {
+            margin-bottom: 10px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
+        input[type="range"] {
+            width: 200px;
+        }
+        
+        .value-display {
+            font-size: 12px;
+            color: #aaa;
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+    <div id="particle-container"></div>
+    
+    <div id="content">
+        <h1>Advanced Particle System</h1>
+        <p>This implementation features:</p>
+        <ul>
+            <li>GPU-accelerated particle rendering</li>
+            <li>Interactive controls</li>
+            <li>Responsive design</li>
+            <li>Performance optimization</li>
+            <li>Dynamic color schemes</li>
+        </ul>
+    </div>
+    
+    <div class="control-panel">
+        <h3>Particle Controls</h3>
+        
+        <div class="control-group">
+            <label for="particleCount">Particle Count</label>
+            <input type="range" id="particleCount" min="500" max="10000" value="3000" step="100">
+            <div class="value-display" id="countValue">3000</div>
+        </div>
+        
+        <div class="control-group">
+            <label for="particleSize">Particle Size</label>
+            <input type="range" id="particleSize" min="0.1" max="2" value="0.5" step="0.1">
+            <div class="value-display" id="sizeValue">0.5</div>
+        </div>
+        
+        <div class="control-group">
+            <label for="particleSpeed">Animation Speed</label>
+            <input type="range" id="particleSpeed" min="0" max="2" value="1" step="0.1">
+            <div class="value-display" id="speedValue">1.0</div>
+        </div>
+        
+        <div class="control-group">
+            <label for="colorScheme">Color Scheme</label>
+            <select id="colorScheme">
+                <option value="default">Default (Gray)</option>
+                <option value="blue">Blue</option>
+                <option value="purple">Purple</option>
+                <option value="fire">Fire</option>
+                <option value="ice">Ice</option>
+            </select>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script>
+        class ParticleSystem {
+            constructor(container, options = {}) {
+                this.container = container;
+                this.options = {
+                    particleCount: 3000,
+                    particleSize: 0.5,
+                    particleSpread: 150,
+                    minZ: -50,
+                    maxZ: 20,
+                    animationSpeed: 1.0,
+                    colorScheme: 'default',
+                    ...options
+                };
+                
+                this.init();
+                this.setupControls();
+                this.setupEventListeners();
+            }
+            
+            init() {
+                // Scene setup
+                this.scene = new THREE.Scene();
+                this.scene.background = new THREE.Color(0x121212);
+                
+                // Camera setup
+                this.camera = new THREE.PerspectiveCamera(
+                    75, 
+                    window.innerWidth / window.innerHeight, 
+                    0.1, 
+                    1000
+                );
+                this.camera.position.z = 30;
+                
+                // Renderer setup
+                this.renderer = new THREE.WebGLRenderer({ antialias: true });
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setPixelRatio(window.devicePixelRatio);
+                this.container.appendChild(this.renderer.domElement);
+                
+                // Lights
+                const ambientLight = new THREE.AmbientLight(0x404040);
+                this.scene.add(ambientLight);
+                
+                // Create particles
+                this.createParticles();
+                
+                // Animation loop
+                this.clock = new THREE.Clock();
+                this.animate();
+            }
+            
+            createParticles() {
+                const { particleCount, particleSpread, minZ, maxZ } = this.options;
+                
+                // Geometry
+                const positions = new Float32Array(particleCount * 3);
+                const colors = new Float32Array(particleCount * 3);
+                const sizes = new Float32Array(particleCount);
+                
+                // Color based on scheme
+                let baseColor;
+                switch(this.options.colorScheme) {
+                    case 'blue':
+                        baseColor = new THREE.Color(0x7AB8F5);
+                        break;
+                    case 'purple':
+                        baseColor = new THREE.Color(0xAA7AF5);
+                        break;
+                    case 'fire':
+                        baseColor = new THREE.Color(0xF5A07A);
+                        break;
+                    case 'ice':
+                        baseColor = new THREE.Color(0x7AF5E8);
+                        break;
+                    default:
+                        baseColor = new THREE.Color(0xAAAAAA);
+                }
+                
+                for (let i = 0; i < particleCount; i++) {
+                    // Position
+                    positions[i * 3] = (Math.random() - 0.5) * particleSpread;
+                    positions[i * 3 + 1] = (Math.random() - 0.5) * particleSpread;
+                    positions[i * 3 + 2] = Math.random() * (maxZ - minZ) + minZ;
+                    
+                    // Color with variation
+                    const colorVariation = (Math.random() - 0.5) * 0.15;
+                    colors[i * 3] = baseColor.r + colorVariation;
+                    colors[i * 3 + 1] = baseColor.g + colorVariation;
+                    colors[i * 3 + 2] = baseColor.b + colorVariation;
+                    
+                    // Size
+                    sizes[i] = Math.random() * 0.15 + 0.05;
+                }
+                
+                const geometry = new THREE.BufferGeometry();
+                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+                geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+                
+                const material = new THREE.PointsMaterial({
+                    size: this.options.particleSize,
+                    vertexColors: true,
+                    blending: THREE.AdditiveBlending,
+                    transparent: true,
+                    opacity: 0.6,
+                    depthWrite: false,
+                    sizeAttenuation: true
+                });
+                
+                if (this.particles) {
+                    this.scene.remove(this.particles);
+                }
+                
+                this.particles = new THREE.Points(geometry, material);
+                this.scene.add(this.particles);
+            }
+            
+            animate() {
+                requestAnimationFrame(() => this.animate());
+                
+                const elapsedTime = this.clock.getElapsedTime() * this.options.animationSpeed;
+                
+                if (this.particles) {
+                    this.particles.rotation.y = elapsedTime * 0.015;
+                    this.particles.rotation.x = elapsedTime * 0.01;
+                    this.particles.rotation.z = elapsedTime * 0.005;
+                }
+                
+                this.renderer.render(this.scene, this.camera);
+            }
+            
+            setupControls() {
+                document.getElementById('particleCount').value = this.options.particleCount;
+                document.getElementById('particleSize').value = this.options.particleSize;
+                document.getElementById('particleSpeed').value = this.options.animationSpeed;
+                document.getElementById('colorScheme').value = this.options.colorScheme;
+                
+                document.getElementById('countValue').textContent = this.options.particleCount;
+                document.getElementById('sizeValue').textContent = this.options.particleSize;
+                document.getElementById('speedValue').textContent = this.options.animationSpeed;
+            }
+            
+            setupEventListeners() {
+                // Particle count control
+                document.getElementById('particleCount').addEventListener('input', (e) => {
+                    this.options.particleCount = parseInt(e.target.value);
+                    document.getElementById('countValue').textContent = this.options.particleCount;
+                    this.createParticles();
+                });
+                
+                // Particle size control
+                document.getElementById('particleSize').addEventListener('input', (e) => {
+                    this.options.particleSize = parseFloat(e.target.value);
+                    document.getElementById('sizeValue').textContent = this.options.particleSize;
+                    if (this.particles) {
+                        this.particles.material.size = this.options.particleSize;
+                    }
+                });
+                
+                // Animation speed control
+                document.getElementById('particleSpeed').addEventListener('input', (e) => {
+                    this.options.animationSpeed = parseFloat(e.target.value);
+                    document.getElementById('speedValue').textContent = this.options.animationSpeed;
+                });
+                
+                // Color scheme control
+                document.getElementById('colorScheme').addEventListener('change', (e) => {
+                    this.options.colorScheme = e.target.value;
+                    this.createParticles();
+                });
+                
+                // Window resize
+                window.addEventListener('resize', () => {
+                    this.camera.aspect = window.innerWidth / window.innerHeight;
+                    this.camera.updateProjectionMatrix();
+                    this.renderer.setSize(window.innerWidth, window.innerHeight);
+                });
+            }
+        }
+        
+        // Initialize the particle system when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            const particleContainer = document.getElementById('particle-container');
+            new ParticleSystem(particleContainer);
+        });
+    </script>
+</body>
+</html>

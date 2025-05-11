@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Shifrlangan iframe yuklanmoqda</title>
   <style>
-    body, html {
+    html, body {
       margin: 0;
       padding: 0;
       height: 100%;
@@ -21,21 +21,21 @@
   <div id="frame-container"></div>
 
   <script>
-    // Shifrlangan iframe URL (Base64 orqali)
-    const encodedURL = "aHR0cHM6Ly9iYWNrZ3Jvb29vbmQub25yZW5kZXIuY29t"; // https://backgrooound.onrender.com
+    // Base64 ko‘rinishida shifrlangan URL
+    const encodedURL = "aHR0cHM6Ly9kZXZhaS0zamZrLm9ucmVuZGVyLmNvbQ=="; // https://devai-3jfk.onrender.com
 
-    // Base64 decode qilish funksiyasi
+    // Base64 ni oddiy URL ga aylantiruvchi funksiya
     function decodeBase64(str) {
       return decodeURIComponent(atob(str).split('').map(function(c) {
         return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
       }).join(''));
     }
 
-    // iframe yaratish
+    // iframe elementini yaratamiz
     const iframe = document.createElement("iframe");
     iframe.src = decodeBase64(encodedURL);
 
-    // iframe ni sahifaga qo'shish
+    // iframe ni sahifaga qo‘shamiz
     document.getElementById("frame-container").appendChild(iframe);
   </script>
 </body>

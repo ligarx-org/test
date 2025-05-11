@@ -3,298 +3,285 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Particle Effects</title>
+    <title>3D Solar System</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
-            background: #121212;
-            color: white;
-            font-family: 'Arial', sans-serif;
+            background-color: #000;
         }
-        
-        #particle-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-        }
-        
-        #content {
-            position: relative;
-            z-index: 1;
-            padding: 2rem;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
-        .control-panel {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        }
-        
-        .control-group {
-            margin-bottom: 10px;
-        }
-        
-        label {
+        canvas {
             display: block;
-            margin-bottom: 5px;
+        }
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-family: Arial, sans-serif;
             font-size: 14px;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 5px;
+            pointer-events: none;
         }
-        
-        input[type="range"] {
-            width: 200px;
+        #controls {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            color: white;
+            font-family: Arial, sans-serif;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 5px;
         }
-        
-        .value-display {
-            font-size: 12px;
-            color: #aaa;
-            text-align: right;
+        button {
+            margin: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
-    <div id="particle-container"></div>
-    
-    <div id="content">
-        <h1>Advanced Particle System</h1>
-        <p>This implementation features:</p>
-        <ul>
-            <li>GPU-accelerated particle rendering</li>
-            <li>Interactive controls</li>
-            <li>Responsive design</li>
-            <li>Performance optimization</li>
-            <li>Dynamic color schemes</li>
-        </ul>
+    <div id="info">
+        <h2>Solar System Simulation</h2>
+        <p>Use mouse to rotate view</p>
+        <p>Scroll to zoom in/out</p>
+        <p>Hold left click to rotate camera</p>
+        <p>Hold right click to pan</p>
     </div>
-    
-    <div class="control-panel">
-        <h3>Particle Controls</h3>
-        
-        <div class="control-group">
-            <label for="particleCount">Particle Count</label>
-            <input type="range" id="particleCount" min="500" max="10000" value="3000" step="100">
-            <div class="value-display" id="countValue">3000</div>
-        </div>
-        
-        <div class="control-group">
-            <label for="particleSize">Particle Size</label>
-            <input type="range" id="particleSize" min="0.1" max="2" value="0.5" step="0.1">
-            <div class="value-display" id="sizeValue">0.5</div>
-        </div>
-        
-        <div class="control-group">
-            <label for="particleSpeed">Animation Speed</label>
-            <input type="range" id="particleSpeed" min="0" max="2" value="1" step="0.1">
-            <div class="value-display" id="speedValue">1.0</div>
-        </div>
-        
-        <div class="control-group">
-            <label for="colorScheme">Color Scheme</label>
-            <select id="colorScheme">
-                <option value="default">Default (Gray)</option>
-                <option value="blue">Blue</option>
-                <option value="purple">Purple</option>
-                <option value="fire">Fire</option>
-                <option value="ice">Ice</option>
-            </select>
-        </div>
+    <div id="controls">
+        <button id="speedUp">Speed Up</button>
+        <button id="speedDown">Slow Down</button>
+        <button id="resetSpeed">Reset Speed</button>
+        <button id="toggleOrbits">Toggle Orbits</button>
+        <span id="speedDisplay">Speed: 1x</span>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
     <script>
-        class ParticleSystem {
-            constructor(container, options = {}) {
-                this.container = container;
-                this.options = {
-                    particleCount: 3000,
-                    particleSize: 0.5,
-                    particleSpread: 150,
-                    minZ: -50,
-                    maxZ: 20,
-                    animationSpeed: 1.0,
-                    colorScheme: 'default',
-                    ...options
+        // Main Three.js code
+        document.addEventListener('DOMContentLoaded', function() {
+            // Scene setup
+            const scene = new THREE.Scene();
+            
+            // Camera setup
+            const camera = new THREE.PerspectiveCamera(
+                45, 
+                window.innerWidth / window.innerHeight, 
+                0.1, 
+                10000
+            );
+            camera.position.set(0, 200, 500);
+            
+            // Renderer setup
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.body.appendChild(renderer.domElement);
+            
+            // Controls
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.minDistance = 100;
+            controls.maxDistance = 2000;
+            
+            // Background - Starfield
+            const starGeometry = new THREE.BufferGeometry();
+            const starMaterial = new THREE.PointsMaterial({
+                color: 0xffffff,
+                size: 1,
+                transparent: true
+            });
+            
+            const starVertices = [];
+            for (let i = 0; i < 10000; i++) {
+                const x = (Math.random() - 0.5) * 2000;
+                const y = (Math.random() - 0.5) * 2000;
+                const z = (Math.random() - 0.5) * 2000;
+                starVertices.push(x, y, z);
+            }
+            
+            starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+            const stars = new THREE.Points(starGeometry, starMaterial);
+            scene.add(stars);
+            
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0x333333);
+            scene.add(ambientLight);
+            
+            const sunLight = new THREE.PointLight(0xffffff, 2, 1000);
+            scene.add(sunLight);
+            
+            // Textures
+            const textureLoader = new THREE.TextureLoader();
+            
+            // Helper function to create planets
+            function createPlanet(size, textureFile, position, ring) {
+                const texture = textureLoader.load(textureFile);
+                const material = new THREE.MeshPhongMaterial({ 
+                    map: texture,
+                    shininess: 5
+                });
+                const geometry = new THREE.SphereGeometry(size, 32, 32);
+                const planet = new THREE.Mesh(geometry, material);
+                planet.castShadow = true;
+                planet.receiveShadow = true;
+                
+                const planetObj = new THREE.Object3D();
+                planetObj.add(planet);
+                
+                if (ring) {
+                    const ringTexture = textureLoader.load(ring.texture);
+                    const ringGeometry = new THREE.RingGeometry(
+                        ring.innerRadius, 
+                        ring.outerRadius, 
+                        32
+                    );
+                    const ringMaterial = new THREE.MeshBasicMaterial({ 
+                        map: ringTexture, 
+                        side: THREE.DoubleSide,
+                        transparent: true
+                    });
+                    const ringMesh = new THREE.Mesh(ringGeometry, ringMaterial);
+                    ringMesh.rotation.x = Math.PI / 2;
+                    planetObj.add(ringMesh);
+                }
+                
+                scene.add(planetObj);
+                planet.position.x = position;
+                
+                return {
+                    mesh: planet,
+                    obj: planetObj,
+                    orbitSpeed: (Math.random() * 0.01) + 0.001,
+                    rotationSpeed: (Math.random() * 0.02) + 0.005
                 };
-                
-                this.init();
-                this.setupControls();
-                this.setupEventListeners();
             }
             
-            init() {
-                // Scene setup
-                this.scene = new THREE.Scene();
-                this.scene.background = new THREE.Color(0x121212);
-                
-                // Camera setup
-                this.camera = new THREE.PerspectiveCamera(
-                    75, 
-                    window.innerWidth / window.innerHeight, 
-                    0.1, 
-                    1000
-                );
-                this.camera.position.z = 30;
-                
-                // Renderer setup
-                this.renderer = new THREE.WebGLRenderer({ antialias: true });
-                this.renderer.setSize(window.innerWidth, window.innerHeight);
-                this.renderer.setPixelRatio(window.devicePixelRatio);
-                this.container.appendChild(this.renderer.domElement);
-                
-                // Lights
-                const ambientLight = new THREE.AmbientLight(0x404040);
-                this.scene.add(ambientLight);
-                
-                // Create particles
-                this.createParticles();
-                
-                // Animation loop
-                this.clock = new THREE.Clock();
-                this.animate();
-            }
+            // Create the Sun
+            const sunGeometry = new THREE.SphereGeometry(30, 32, 32);
+            const sunMaterial = new THREE.MeshBasicMaterial({
+                map: textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/sun_atmos_4096.jpg'),
+                color: 0xffff00
+            });
+            const sun = new THREE.Mesh(sunGeometry, sunMaterial);
+            sunLight.position.set(0, 0, 0);
+            scene.add(sun);
             
-            createParticles() {
-                const { particleCount, particleSpread, minZ, maxZ } = this.options;
+            // Create planets
+            const planets = [
+                createPlanet(5, 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/mercury_2048.jpg', 60), // Mercury
+                createPlanet(8, 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/venus_surface_2048.jpg', 90), // Venus
+                createPlanet(8, 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_atmos_2048.jpg', 120), // Earth
+                createPlanet(6, 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/mars_2048.jpg', 150), // Mars
+                createPlanet(15, 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/jupiter_2048.jpg', 190), // Jupiter
+                createPlanet(12, 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/saturn_2048.jpg', 240, {
+                    innerRadius: 15,
+                    outerRadius: 25,
+                    texture: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/saturn_ring_2048.png'
+                }), // Saturn
+                createPlanet(10, 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/uranus_2048.jpg', 290, {
+                    innerRadius: 10,
+                    outerRadius: 15,
+                    texture: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/uranus_ring_2048.png'
+                }), // Uranus
+                createPlanet(10, 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/neptune_2048.jpg', 340), // Neptune
+                createPlanet(3, 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/pluto_2048.jpg', 380) // Pluto
+            ];
+            
+            // Create orbits (visual guides)
+            const orbitLines = [];
+            const orbitMaterials = [
+                new THREE.LineBasicMaterial({ color: 0x888888, transparent: true, opacity: 0.3 })
+            ];
+            
+            [60, 90, 120, 150, 190, 240, 290, 340, 380].forEach((radius, i) => {
+                const orbitGeometry = new THREE.BufferGeometry();
+                const points = [];
+                const segments = 64;
                 
-                // Geometry
-                const positions = new Float32Array(particleCount * 3);
-                const colors = new Float32Array(particleCount * 3);
-                const sizes = new Float32Array(particleCount);
-                
-                // Color based on scheme
-                let baseColor;
-                switch(this.options.colorScheme) {
-                    case 'blue':
-                        baseColor = new THREE.Color(0x7AB8F5);
-                        break;
-                    case 'purple':
-                        baseColor = new THREE.Color(0xAA7AF5);
-                        break;
-                    case 'fire':
-                        baseColor = new THREE.Color(0xF5A07A);
-                        break;
-                    case 'ice':
-                        baseColor = new THREE.Color(0x7AF5E8);
-                        break;
-                    default:
-                        baseColor = new THREE.Color(0xAAAAAA);
+                for (let j = 0; j <= segments; j++) {
+                    const theta = (j / segments) * Math.PI * 2;
+                    points.push(
+                        new THREE.Vector3(
+                            Math.cos(theta) * radius,
+                            0,
+                            Math.sin(theta) * radius
+                        )
+                    );
                 }
                 
-                for (let i = 0; i < particleCount; i++) {
-                    // Position
-                    positions[i * 3] = (Math.random() - 0.5) * particleSpread;
-                    positions[i * 3 + 1] = (Math.random() - 0.5) * particleSpread;
-                    positions[i * 3 + 2] = Math.random() * (maxZ - minZ) + minZ;
-                    
-                    // Color with variation
-                    const colorVariation = (Math.random() - 0.5) * 0.15;
-                    colors[i * 3] = baseColor.r + colorVariation;
-                    colors[i * 3 + 1] = baseColor.g + colorVariation;
-                    colors[i * 3 + 2] = baseColor.b + colorVariation;
-                    
-                    // Size
-                    sizes[i] = Math.random() * 0.15 + 0.05;
-                }
-                
-                const geometry = new THREE.BufferGeometry();
-                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-                geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-                geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
-                
-                const material = new THREE.PointsMaterial({
-                    size: this.options.particleSize,
-                    vertexColors: true,
-                    blending: THREE.AdditiveBlending,
-                    transparent: true,
-                    opacity: 0.6,
-                    depthWrite: false,
-                    sizeAttenuation: true
+                orbitGeometry.setFromPoints(points);
+                const orbitLine = new THREE.Line(orbitGeometry, orbitMaterials[0]);
+                scene.add(orbitLine);
+                orbitLines.push(orbitLine);
+            });
+            
+            // Animation variables
+            let animationSpeed = 1;
+            let showOrbits = true;
+            
+            // Controls UI
+            document.getElementById('speedUp').addEventListener('click', () => {
+                animationSpeed *= 1.5;
+                updateSpeedDisplay();
+            });
+            
+            document.getElementById('speedDown').addEventListener('click', () => {
+                animationSpeed /= 1.5;
+                updateSpeedDisplay();
+            });
+            
+            document.getElementById('resetSpeed').addEventListener('click', () => {
+                animationSpeed = 1;
+                updateSpeedDisplay();
+            });
+            
+            document.getElementById('toggleOrbits').addEventListener('click', () => {
+                showOrbits = !showOrbits;
+                orbitLines.forEach(orbit => {
+                    orbit.visible = showOrbits;
                 });
-                
-                if (this.particles) {
-                    this.scene.remove(this.particles);
-                }
-                
-                this.particles = new THREE.Points(geometry, material);
-                this.scene.add(this.particles);
+            });
+            
+            function updateSpeedDisplay() {
+                document.getElementById('speedDisplay').textContent = 
+                    `Speed: ${animationSpeed.toFixed(2)}x`;
             }
             
-            animate() {
-                requestAnimationFrame(() => this.animate());
+            // Animation loop
+            function animate() {
+                requestAnimationFrame(animate);
                 
-                const elapsedTime = this.clock.getElapsedTime() * this.options.animationSpeed;
+                // Rotate the Sun
+                sun.rotation.y += 0.002 * animationSpeed;
                 
-                if (this.particles) {
-                    this.particles.rotation.y = elapsedTime * 0.015;
-                    this.particles.rotation.x = elapsedTime * 0.01;
-                    this.particles.rotation.z = elapsedTime * 0.005;
-                }
+                // Update planets
+                planets.forEach(planet => {
+                    planet.obj.rotation.y += planet.orbitSpeed * animationSpeed;
+                    planet.mesh.rotation.y += planet.rotationSpeed * animationSpeed;
+                });
                 
-                this.renderer.render(this.scene, this.camera);
+                // Update controls
+                controls.update();
+                
+                // Render scene
+                renderer.render(scene, camera);
             }
             
-            setupControls() {
-                document.getElementById('particleCount').value = this.options.particleCount;
-                document.getElementById('particleSize').value = this.options.particleSize;
-                document.getElementById('particleSpeed').value = this.options.animationSpeed;
-                document.getElementById('colorScheme').value = this.options.colorScheme;
-                
-                document.getElementById('countValue').textContent = this.options.particleCount;
-                document.getElementById('sizeValue').textContent = this.options.particleSize;
-                document.getElementById('speedValue').textContent = this.options.animationSpeed;
-            }
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
             
-            setupEventListeners() {
-                // Particle count control
-                document.getElementById('particleCount').addEventListener('input', (e) => {
-                    this.options.particleCount = parseInt(e.target.value);
-                    document.getElementById('countValue').textContent = this.options.particleCount;
-                    this.createParticles();
-                });
-                
-                // Particle size control
-                document.getElementById('particleSize').addEventListener('input', (e) => {
-                    this.options.particleSize = parseFloat(e.target.value);
-                    document.getElementById('sizeValue').textContent = this.options.particleSize;
-                    if (this.particles) {
-                        this.particles.material.size = this.options.particleSize;
-                    }
-                });
-                
-                // Animation speed control
-                document.getElementById('particleSpeed').addEventListener('input', (e) => {
-                    this.options.animationSpeed = parseFloat(e.target.value);
-                    document.getElementById('speedValue').textContent = this.options.animationSpeed;
-                });
-                
-                // Color scheme control
-                document.getElementById('colorScheme').addEventListener('change', (e) => {
-                    this.options.colorScheme = e.target.value;
-                    this.createParticles();
-                });
-                
-                // Window resize
-                window.addEventListener('resize', () => {
-                    this.camera.aspect = window.innerWidth / window.innerHeight;
-                    this.camera.updateProjectionMatrix();
-                    this.renderer.setSize(window.innerWidth, window.innerHeight);
-                });
-            }
-        }
-        
-        // Initialize the particle system when DOM is loaded
-        document.addEventListener('DOMContentLoaded', () => {
-            const particleContainer = document.getElementById('particle-container');
-            new ParticleSystem(particleContainer);
+            // Start animation
+            animate();
         });
     </script>
 </body>

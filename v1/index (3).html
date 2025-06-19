@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tasbeh</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            position: relative;
+        }
+        video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -1;
+            opacity: 0.7;
+            animation: fadeIn 2s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 0.7; }
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            animation: zoomIn 0.5s ease-out;
+            z-index: 1;
+        }
+        @keyframes zoomIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .zikr-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+        }
+        .zikr-btn {
+            padding: 8px 16px;
+            font-size: 18px;
+            border: none;
+            border-radius: 25px;
+            background: linear-gradient(45deg, #ccc, #ddd);
+            cursor: pointer;
+            width: 160px;
+            text-align: center;
+            transition: transform 0.2s, background 0.3s, box-shadow 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .zikr-btn.active {
+            background: linear-gradient(45deg, #00c800, #00e676);
+            color: white;
+            box-shadow: 0 6px 12px rgba(0, 200, 0, 0.3);
+        }
+        .zikr-btn:hover {
+            background: linear-gradient(45deg, #999, #bbb);
+            transform: scale(1.05);
+        }
+        .zikr-btn.pressed {
+            background: linear-gradient(45deg, #009600, #00b248);
+            transform: scale(0.95);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .reset-btn {
+            padding: 8px 16px;
+            font-size: 16px;
+            background: linear-gradient(45deg, #c80000, #e53935);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            width: 80px;
+            transition: transform 0.2s, background 0.3s, box-shadow 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .reset-btn:hover {
+            background: linear-gradient(45deg, #a00, #c62828);
+            transform: scale(1.05);
+        }
+        .reset-btn.pressed {
+            background: linear-gradient(45deg, #960000, #b71c1c);
+            transform: scale(0.95);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .total-counters p {
+            font-size: 14px;
+            margin: 3px 0;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.5s, transform 0.5s;
+        }
+        .total-counters p.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        canvas {
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.95);
+        }
+        .pulse {
+            animation: pulse 0.3s ease;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+<video autoplay muted loop>
+    <source src="https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+</video>
+<div class="container">
+    <div class="zikr-controls">
+        <button class="zikr-btn active" data-zikr="Subhanallah">Subhanallah <span class="counter">0/33</span></button>
+        <button class="zikr-btn" data-zikr="Alhamdulillah">Alhamdulillah <span class="counter">0/33</span></button>
+        <button class="zikr-btn" data-zikr="Allahu Akbar">Allahu Akbar <span class="counter">0/33</span></button>
+        <div class="total-counters">
+            <p class="visible">Subhanallah: <span id="total-subhanallah">0</span></p>
+            <p class="visible">Alhamdulillah: <span id="total-alhamdulillah">0</span></p>
+            <p class="visible">Allahu Akbar: <span id="total-allahuakbar">0</span></p>
+        </div>
+        <button class="reset-btn">Reset</button>
+    </div>
+    <canvas id="tasbeh-canvas" width="400" height="300"></canvas>
+</div>
+<script>
+    const canvas = document.getElementById('tasbeh-canvas');
+    const ctx = canvas.getContext('2d');
+    const WIDTH = 400, HEIGHT = 300, TASBEH_SIZE = 100, BEAD_RADIUS = 5;
+    let counter = 0, currentZikr = 'Subhanallah', zikrIndex = 0;
+    const zikrOptions = ['Subhanallah', 'Alhamdulillah', 'Allahu Akbar'];
+    const zikrCounts = { Subhanallah: 0, Alhamdulillah: 0, 'Allahu Akbar': 0 };
+    let tasbehAngle = 0, targetAngle = 0, tasbehScale = 1;
+    let isTasbehPressed = false, isResetPressed = false, pressedZikr = null;
+
+    // Ovoz fayllari (serverda joylashtirish kerak)
+    const zikrSounds = {
+        'Subhanallah': new Audio('subhanallah.mp3'),
+        'Alhamdulillah': new Audio('alhamdulillah.mp3'),
+        'Allahu Akbar': new Audio('allahuakbar.mp3')
+    };
+
+    function drawTasbeh() {
+        ctx.clearRect(0, 0, WIDTH, HEIGHT);
+        const centerX = WIDTH - TASBEH_SIZE - 20, centerY = HEIGHT / 2 - TASBEH_SIZE / 2;
+
+        // Tasbeh halqasi
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.scale(tasbehScale, tasbehScale);
+        ctx.rotate(tasbehAngle * Math.PI / 180);
+        for (let i = 0; i < 33; i++) {
+            const beadAngle = (i * 360 / 33) * Math.PI / 180;
+            const beadX = (TASBEH_SIZE / 2) * Math.cos(beadAngle);
+            const beadY = (TASBEH_SIZE / 2) * Math.sin(beadAngle);
+            ctx.beginPath();
+            ctx.arc(beadX, beadY, BEAD_RADIUS, 0, 2 * Math.PI);
+            ctx.fillStyle = isTasbehPressed ? '#888' : '#b4b4b4';
+            ctx.fill();
+            ctx.strokeStyle = '#666';
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        // Bezak qismi (oy va yurak)
+        ctx.save();
+        ctx.translate(centerX, centerY + TASBEH_SIZE / 2);
+        ctx.scale(tasbehScale, tasbehScale);
+        ctx.beginPath();
+        ctx.arc(0, 0, 10, 0, 2 * Math.PI);
+        ctx.fillStyle = '#ffd700';
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(-7.5, 0);
+        ctx.lineTo(7.5, 0);
+        ctx.lineTo(0, 10);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+
+        // Tassel
+        ctx.save();
+        ctx.translate(centerX, centerY + TASBEH_SIZE / 2 + 15);
+        ctx.scale(tasbehScale, tasbehScale);
+        for (let i = 0; i < 5; i++) {
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-10 + i * 4, 15);
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    function updateUI() {
+        document.querySelectorAll('.zikr-btn').forEach(btn => {
+            const zikr = btn.dataset.zikr;
+            btn.classList.toggle('active', zikr === currentZikr);
+            btn.classList.toggle('pressed', zikr === pressedZikr);
+            btn.querySelector('.counter').textContent = `${zikr === currentZikr ? counter : 0}/33`;
+        });
+        document.getElementById('total-subhanallah').textContent = zikrCounts['Subhanallah'];
+        document.getElementById('total-alhamdulillah').textContent = zikrCounts['Alhamdulillah'];
+        document.getElementById('total-allahuakbar').textContent = zikrCounts['Allahu Akbar'];
+        document.querySelector('.reset-btn').classList.toggle('pressed', isResetPressed);
+        drawTasbeh();
+    }
+
+    document.querySelectorAll('.zikr-btn').forEach(btn => {
+        btn.addEventListener('mousedown', () => {
+            pressedZikr = btn.dataset.zikr;
+            btn.classList.add('pulse');
+            setTimeout(() => btn.classList.remove('pulse'), 300);
+            updateUI();
+        });
+        btn.addEventListener('mouseup', () => {
+            currentZikr = btn.dataset.zikr;
+            zikrIndex = zikrOptions.indexOf(currentZikr);
+            counter = 0;
+            pressedZikr = null;
+            document.querySelectorAll('.total-counters p').forEach(p => {
+                p.classList.remove('visible');
+                setTimeout(() => p.classList.add('visible'), 50);
+            });
+            updateUI();
+        });
+    });
+
+    document.querySelector('.reset-btn').addEventListener('mousedown', () => {
+        isResetPressed = true;
+        document.querySelector('.reset-btn').classList.add('pulse');
+        setTimeout(() => document.querySelector('.reset-btn').classList.remove('pulse'), 300);
+        updateUI();
+    });
+    document.querySelector('.reset-btn').addEventListener('mouseup', () => {
+        counter = 0;
+        Object.keys(zikrCounts).forEach(zikr => zikrCounts[zikr] = 0);
+        isResetPressed = false;
+        document.querySelectorAll('.total-counters p').forEach(p => {
+            p.classList.remove('visible');
+            setTimeout(() => p.classList.add('visible'), 50);
+        });
+        updateUI();
+    });
+
+    canvas.addEventListener('mousedown', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left, y = e.clientY - rect.top;
+        const centerX = WIDTH - TASBEH_SIZE - 20, centerY = HEIGHT / 2 - TASBEH_SIZE / 2;
+        if (x >= centerX - TASBEH_SIZE / 2 && x <= centerX + TASBEH_SIZE / 2 &&
+            y >= centerY - TASBEH_SIZE / 2 && y <= centerY + TASBEH_SIZE / 2 + 30) {
+            isTasbehPressed = true;
+            counter++;
+            zikrCounts[currentZikr]++;
+            targetAngle += 10;
+            tasbehScale = 1.1;
+            setTimeout(() => tasbehScale = 1, 200);
+            if (zikrSounds[currentZikr]) {
+                zikrSounds[currentZikr].play().catch(e => console.log('Ovoz xatosi:', e));
+            }
+            if (counter >= 33) {
+                zikrIndex = (zikrIndex + 1) % zikrOptions.length;
+                currentZikr = zikrOptions[zikrIndex];
+                counter = 0;
+                document.title = `${currentZikr} boshlandi!`;
+                document.querySelector('title').classList.add('pulse');
+                setTimeout(() => document.querySelector('title').classList.remove('pulse'), 300);
+                document.querySelectorAll('.total-counters p').forEach(p => {
+                    p.classList.remove('visible');
+                    setTimeout(() => p.classList.add('visible'), 50);
+                });
+            }
+            updateUI();
+        }
+    });
+
+    canvas.addEventListener('mouseup', () => {
+        isTasbehPressed = false;
+        updateUI();
+    });
+
+    function animate() {
+        tasbehAngle += (targetAngle - tasbehAngle) * 0.1; // Silliq aylanish
+        updateUI();
+        requestAnimationFrame(animate);
+    }
+
+    animate();
+</script>
+</body>
+</html>
